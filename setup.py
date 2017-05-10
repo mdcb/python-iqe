@@ -1,44 +1,42 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from numpy.distutils.core import setup, Extension
-from os import environ as env
 
 version = '1.1'
 
-undef_macros=[
-   'PY_IQE_DEBUG'
-  ]
+undef_macros=[]
  
 define_macros=[
-   ('PY_IQE_VERSION',          '\\\"%s\\\"' % version),
-   ]
+  ('PYIQE_VERSION', '\\\"{}\\\"'.format(version)),
+  ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'),
+]
 
-extra_compile_args=['-Wall']
+extra_compile_args=['-Wno-maybe-uninitialized'] # ['-Wall','-pedantic']
 
-setup(name='python-iqe',
-      version=version,
-      description='Image Quality Estimator',
-      long_description="Plugin to ESO's skycat pick-object.",
-      author='Matthieu Bec',
-      author_email='mdcb808@gmail.com',
-      url='https://github.com/mdcb/python-iqe',
-      license='GNU General Public License',
-      ext_modules=[
-         Extension(
-            name='iqe',
-            sources = [
-               'covsrt.c',
-               'gaussj.c',
-               'indexx.c',
-               'iqefunc.c',
-               'mrqfit.c',
-               'sort.c',
-               'python-iqe.c',
-              ],
-            define_macros=define_macros,
-            libraries = ['m'],
-            extra_compile_args = extra_compile_args,
-            )
-         ]
-      )
+setup(name='python3-iqe',
+  version=version,
+  description='Image Quality Estimator',
+  long_description="Plugin to ESO's skycat pick-object.",
+  author='Matthieu Bec',
+  author_email='mdcb808@gmail.com',
+  url='https://github.com/mdcb/python-iqe',
+  license='GNU General Public License',
+  ext_modules=[
+    Extension(
+      name='iqe',
+      sources = [
+        'covsrt.c',
+        'gaussj.c',
+        'indexx.c',
+        'iqefunc.c',
+        'mrqfit.c',
+        'sort.c',
+        'python-iqe.c',
+      ],
+      define_macros=define_macros,
+      libraries = ['m'],
+      extra_compile_args = extra_compile_args,
+    )
+  ]
+)
      

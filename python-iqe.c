@@ -1,214 +1,173 @@
-#include "Python.h"
-#include "structmember.h"
+#include <stdio.h>
+#include <Python.h>
+#include <structmember.h>
+#include <numpy/arrayobject.h>
 
-#include "numpy/arrayobject.h"
+extern int iqe(float * pfm, float * pwm, int mx, int my, float * parm, float * sdev);
 
-//extern "C" {
-int iqe(float *pfm, float *pwm, int mx, int my, float *parm, float *sdev);
-//}
+PyObject * pyiqe_err;
 
-#include "stdio.h"
+#define PYIQE_ERR(m) PyErr_Format(pyiqe_err, m);
 
-static char const rcsid[] = "$Id:$";
+PyObject * pyiqe(PyObject * self, PyObject * args)
+{
+
+  PyObject * data = NULL;
+  PyObject * mask = NULL;
+  PyArrayObject * inp_array = NULL;
+  PyArrayObject * flt_array = NULL;
+  PyArrayObject * msk_array = NULL;
+  PyArrayObject * mskflt_array = NULL;
+  PyArrayObject * result = NULL;
+
+  if (!PyArg_ParseTuple(args, "O|O", &data, &mask))
+    {
+      PYIQE_ERR("Usage: iqe(data[,mask])");
+      goto iqe_exit;
+    }
+
+  inp_array = (PyArrayObject *) PyArray_FROM_O(data);
+
+  if (!inp_array)
+    {
+      PYIQE_ERR("cannot convert input to array");
+      goto iqe_exit;
+    }
+
+  if (PyArray_NDIM(inp_array) != 2)
+    {
+      PYIQE_ERR("input must be two dimensional");
+      goto iqe_exit;
+    }
+
+  npy_intp * dims = PyArray_DIMS(inp_array);
+  npy_intp w = dims[1]; // XXX subwindow -> param
+  npy_intp h = dims[0];
+
+  flt_array = (PyArrayObject *) PyArray_Cast(inp_array, NPY_FLOAT);
+
+  if (!flt_array)
+    {
+      PYIQE_ERR("input does not cast to float");
+      goto iqe_exit;
+    }
 
 
-// the object refering to this module
+  float * fltdata = (float *) PyArray_DATA(flt_array);
+  float * fltmsk = NULL;
 
-PyObject *pyiqe_module;
-PyDoc_VAR(pyiqe_doc) = PyDoc_STR("Image Quality Estimator for Python.\n");
-
-// the module common error
-
-PyObject *pyiqe_error;
-
-//=============================================================================
-// Methods
-//=============================================================================
-
-PyDoc_STRVAR(pyiqe_iqe_doc,
-"usage: iqe(2d-array-data[,2d-array-mask])\n\
-returns [meanX,meanY,fwhmX,fwhmY,symetryAngle,objectPeak,meanBackground]\n\
-where x,y = 0,0 is at the center of the first pixel.");
-
-PyObject * pyiqe_iqe(PyObject *self, PyObject *args) {
-   
-   PyObject *data;
-   PyObject *mask=NULL;
-   npy_intp *dims,*mdims;
-   npy_intp w,h,mw,mh;
-   
-   if (!PyArg_ParseTuple(args, "O|O", &data, &mask)) {
-      PyErr_Format(pyiqe_error, "Usage: iqe(data[,mask])");
-      return NULL;
-   }
-
-   // data
-   // creates a new ref
-   PyArrayObject *inp_array = (PyArrayObject *) PyArray_FROM_O(data);
-
-   if (!inp_array) {
-      PyErr_Format(pyiqe_error, "argument doesn't look like an array");
-      return NULL;
-   }
-
-   if (PyArray_NDIM(inp_array) != 2) {
-      PyErr_Format(pyiqe_error, "argument must be 2 dimensional");
-      return NULL;
-   }
-
-   dims = PyArray_DIMS(inp_array);
-   
-   w=dims[1];
-   h=dims[0];
-   
-   PyArrayObject *flt_array = (PyArrayObject *) PyArray_Cast(inp_array,NPY_FLOAT);
-   if (!flt_array) {
-      PyErr_Format(pyiqe_error, "argument doesn't cast to float");
-      return NULL;
-   }
-
-   
-   float *fltdata = (float*)PyArray_DATA(flt_array);
-   
-   // mask
-   // creates a new ref
-   PyArrayObject *msk_array=NULL;
-   PyArrayObject *mskflt_array=NULL;
-   float *fltmsk = NULL;
-   if (mask) {
+  if (mask)
+    {
       msk_array = (PyArrayObject *) PyArray_FROM_O(mask);
 
-      if (!msk_array) {
-         PyErr_Format(pyiqe_error, "mask argument doesn't look like an array");
-         return NULL;
-      }
+      if (!msk_array)
+        {
+          PYIQE_ERR("cannot convert mask to array");
+          goto iqe_exit;
+        }
 
-      if (PyArray_NDIM(msk_array) != 2) {
-         PyErr_Format(pyiqe_error, "mask argument must be 2 dimensional");
-         return NULL;
-      }
+      if (PyArray_NDIM(msk_array) != 2)
+        {
+          PYIQE_ERR("mask must be two dimensional");
+          goto iqe_exit;
+        }
 
-      mdims = PyArray_DIMS(msk_array);
-      mw=mdims[1];
-      mh=mdims[0];
+      npy_intp * mdims = PyArray_DIMS(msk_array);
+      npy_intp mw = mdims[1];
+      npy_intp mh = mdims[0];
 
-      mskflt_array = (PyArrayObject *) PyArray_Cast(msk_array,NPY_FLOAT);
-      if (!mskflt_array) {
-         PyErr_Format(pyiqe_error, "mask argument doesn't cast to float");
-         return NULL;
-      }
-      fltmsk = (float*)PyArray_DATA(mskflt_array);
-   }
-   
-#ifdef PY_IQE_DEBUG
-   int i,j;
-   float *pf=fltdata;
-   printf ("data:\n");
-   for (j=0;j<h;j++) {
-      for (i=0;i<w;i++) {
-         printf ("%.2f ",*pf++);
-      }
-      printf("\n");
-   }
-   pf=fltmsk;
-   if (fltmsk) {
-      printf ("mask:\n");
-      for (j=0;j<h;j++) {
-         for (i=0;i<w;i++) {
-            printf ("%.2f ",*pf++);
-         }
-         printf("\n");
-      }
-   }
-#endif
-   
-   float parm[8], sdev[8];
-   
-   int status = (iqe(fltdata, fltmsk, w, h, parm, sdev)!=0);
-   
-    if (status != 0) {
-      // free temp ref
-      // not needed? won't hurt anyway
-      Py_DECREF(inp_array);
-      if (msk_array) Py_DECREF(msk_array);
-      // do
-      Py_DECREF(flt_array);
-      if (mskflt_array) Py_DECREF(mskflt_array);
-      PyErr_Format(pyiqe_error, "Could not calculate statistics on specified area of image. Please make another selection.");
-      return NULL;
-    } else {
-#ifdef PY_IQE_DEBUG
-      printf ("meanX %f meanY %f fwhmX %f fwhmY %f\n",parm[0],parm[2],parm[1],parm[3]);
-      printf ("symetryAngle %f objectPeak %f meanBackground %f\n",parm[4],parm[5],parm[6]);
-#endif
+      mskflt_array = (PyArrayObject *) PyArray_Cast(msk_array, NPY_FLOAT);
+
+      if (!mskflt_array)
+        {
+          PYIQE_ERR("mask does not cast to float");
+          goto iqe_exit;
+        }
+
+      fltmsk = (float *) PyArray_DATA(mskflt_array);
     }
-   
-   npy_intp res_dims[1]={7};
-   
-   PyObject *result = PyArray_SimpleNewFromDescr(
-      1,
-      res_dims,
-      PyArray_DescrFromType(NPY_FLOAT32));
-   
-   float *resdata = (float*)PyArray_DATA(result);
-   resdata[0]=parm[0];
-   resdata[1]=parm[2];
-   resdata[2]=parm[1];
-   resdata[3]=parm[3];
-   resdata[4]=parm[4];
-   resdata[5]=parm[5];
-   resdata[6]=parm[6];
-   
-   
-   // free temp ref - not sure it's really needed. won't hurt anyway
-   Py_DECREF(inp_array);
-   if (msk_array) Py_DECREF(msk_array);
-   
-   // this one for sure
-   Py_DECREF(flt_array);
-   if (mskflt_array) Py_DECREF(mskflt_array);
-   
-   //Py_INCREF(Py_None);
-	//return Py_None;
-   
-   // returns the result as a numpy array
-   Py_INCREF(result);
-	return result;
+
+  float parm[8], sdev[8];
+
+  if (iqe(fltdata, fltmsk, w, h, parm, sdev))
+    {
+      Py_DECREF(inp_array);
+
+      if (msk_array) { Py_DECREF(msk_array); }
+
+      Py_DECREF(flt_array);
+
+      if (mskflt_array) { Py_DECREF(mskflt_array); }
+
+      PYIQE_ERR("Could not calculate statistics on specified area of image.");
+      goto iqe_exit;
+    }
+
+  npy_intp res_dims[1] = {7};
+  result = PyArray_SimpleNewFromDescr(1, res_dims, PyArray_DescrFromType(NPY_FLOAT32));
+
+  float * rval = (float *) PyArray_DATA(result);
+  rval[0] = parm[0];
+  rval[1] = parm[2];
+  rval[2] = parm[1];
+  rval[3] = parm[3];
+  rval[4] = parm[4];
+  rval[5] = parm[5];
+  rval[6] = parm[6];
+
+iqe_exit:
+
+  Py_XDECREF(inp_array);
+  Py_XDECREF(flt_array);
+  Py_XDECREF(msk_array);
+  Py_XDECREF(mskflt_array);
+  Py_XINCREF(result);
+  return result;
 }
 
 
-// the module static method
-
-static struct PyMethodDef pyiqe_methods[] = {
-	   {"iqe",   (PyCFunction)pyiqe_iqe,   METH_VARARGS, pyiqe_iqe_doc},
-	   {NULL}	/* sentinel */
-	};
-
 //-------------------------------------------------------------------
-// initiqe - module initialization
+// init
 //-------------------------------------------------------------------
 
-PyMODINIT_FUNC initiqe() {
+PyDoc_STRVAR(pyiqe_doc,
+  "usage: iqe(2d-array-data[,2d-array-mask])\n"
+  "returns [meanX,meanY,fwhmX,fwhmY,symetryAngle,objectPeak,meanBackground]\n"
+  "where x,y = 0,0 is at the center of the first pixel."
+);
 
-   // initialize Python
-	Py_Initialize();
-	
-   // initialize numpy
-   if (_import_array() < 0)
-      return;
+struct PyMethodDef methods[] =
+{
+  {"iqe", (PyCFunction)pyiqe, METH_VARARGS, pyiqe_doc},
+  {NULL}
+};
 
-	// Initialize the module
-	if ((pyiqe_module = Py_InitModule3("iqe",pyiqe_methods,pyiqe_doc)) == NULL)
-      return;
+struct PyModuleDef pyiqe_def =
+{
+  PyModuleDef_HEAD_INIT,
+  "iqe",
+  PyDoc_STR("Image quality estimator for python.\n"),
+  -1,
+  methods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
 
-	// define module generic error
-	pyiqe_error = PyErr_NewException("iqe.error",NULL,NULL);
-	PyModule_AddObject(pyiqe_module, "error" ,pyiqe_error);
+PyMODINIT_FUNC PyInit_iqe(void)
+{
+  PyObject * m;
+  Py_Initialize();
+  import_array();
+  m = PyModule_Create(&pyiqe_def);
 
-	// Add symbolic constants
-   PyModule_AddStringConstant(pyiqe_module,"version", PY_IQE_VERSION);
+  if (m == NULL) { return NULL; }
 
-
-	}
+  pyiqe_err = PyErr_NewException("iqe.error", NULL, NULL);
+  PyModule_AddObject(m, "error" , pyiqe_err);
+  PyModule_AddStringConstant(m, "__version__", PYIQE_VERSION);
+  return m;
+}
 
 
