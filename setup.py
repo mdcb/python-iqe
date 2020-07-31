@@ -7,7 +7,7 @@ version = '1.1'
 undef_macros=[]
  
 define_macros=[
-  ('PYIQE_VERSION', '\\\"{}\\\"'.format(version)),
+  ('PYIQE_VERSION', f'"{version}"'),
   ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'),
 ]
 
