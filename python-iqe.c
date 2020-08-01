@@ -123,6 +123,8 @@ PyObject * pyiqe(PyObject * self, PyObject * args)
   rval[5] = parm[5];
   rval[6] = parm[6];
 
+  // TODO also return sdev vector
+
 iqe_exit:
 
   Py_XDECREF(inp_array);
