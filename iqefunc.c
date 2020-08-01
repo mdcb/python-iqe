@@ -758,7 +758,7 @@ if (pwm)
          if (0.0<*pwm)
             *pw++ = *pwm++;
          else
-            *pw++ = 1.0;
+            *pw++ = 0.0; // XXX mdcb - was 1.0
          }
       pfm += mx - nx;
       psize = pfm - pfmo;
