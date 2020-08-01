@@ -140,8 +140,11 @@ iqe_exit:
 
 PyDoc_STRVAR(pyiqe_doc,
   "usage: iqe(2d-array-data[,2d-array-mask])\n"
-  "returns [meanX,meanY,fwhmX,fwhmY,symetryAngle,objectPeak,meanBackground]\n"
-  "where x,y = 0,0 is at the center of the first pixel."
+  "returns [meanX,meanY,fwhmX,fwhmY,symmetryAngle,objectPeak,meanBackground]\n"
+  " mean X/Y position within array, first pixel = 0."
+  " angle of major axis, degrees, along X."
+  " peak value of object above background."
+  " mean background level."
 );
 
 struct PyMethodDef methods[] =

@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 
-from numpy.distutils.core import setup, Extension
+from numpy.distutils.core import setup, Distribution, Extension
 
-version = '1.1'
+dist = Distribution()
+dist.parse_config_files()
+dist.parse_command_line()
 
-undef_macros=[]
- 
+release = dist.get_option_dict('bdist_rpm')['release'][1]
+version = dist.get_option_dict('command')['version'][1]
+
 define_macros=[
-  ('PYIQE_VERSION', f'"{version}"'),
+  ('PYIQE_VERSION', f'"{version}-{release}"'),
   ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'),
 ]
 
 extra_compile_args=[
-  #'-Wno-maybe-uninitialized'
-  #'-Wall',
-  #'-pedantic'
+  '-Wno-unused-but-set-variable',
+  '-Wno-unused-variable',
 ]
 
 setup(name='python3-iqe',
@@ -40,4 +42,4 @@ setup(name='python3-iqe',
     )
   ]
 )
-     
+
