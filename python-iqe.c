@@ -3,6 +3,11 @@
 #include <structmember.h>
 #include <numpy/arrayobject.h>
 
+#ifndef PYIQE_VERSION
+#define PYIQE_VERSION "devel"
+#endif
+
+
 extern int iqe(float * pfm, float * pwm, int mx, int my, float * parm, float * sdev);
 
 PyObject * pyiqe_err;
@@ -18,7 +23,7 @@ PyObject * pyiqe(PyObject * self, PyObject * args)
   PyArrayObject * flt_array = NULL;
   PyArrayObject * msk_array = NULL;
   PyArrayObject * mskflt_array = NULL;
-  PyArrayObject * result = NULL;
+  PyObject * result = NULL;
 
   if (!PyArg_ParseTuple(args, "O|O", &data, &mask))
     {
@@ -85,9 +90,12 @@ PyObject * pyiqe(PyObject * self, PyObject * args)
         }
 
       fltmsk = (float *) PyArray_DATA(mskflt_array);
+
     }
 
   float parm[8], sdev[8];
+
+
 
   if (iqe(fltdata, fltmsk, w, h, parm, sdev))
     {
@@ -106,7 +114,7 @@ PyObject * pyiqe(PyObject * self, PyObject * args)
   npy_intp res_dims[1] = {7};
   result = PyArray_SimpleNewFromDescr(1, res_dims, PyArray_DescrFromType(NPY_FLOAT32));
 
-  float * rval = (float *) PyArray_DATA(result);
+  float * rval = (float *) PyArray_DATA((PyArrayObject *) result);
   rval[0] = parm[0];
   rval[1] = parm[2];
   rval[2] = parm[1];

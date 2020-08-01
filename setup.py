@@ -11,7 +11,11 @@ define_macros=[
   ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'),
 ]
 
-extra_compile_args=['-Wno-maybe-uninitialized'] # ['-Wall','-pedantic']
+extra_compile_args=[
+  #'-Wno-maybe-uninitialized'
+  #'-Wall',
+  #'-pedantic'
+]
 
 setup(name='python3-iqe',
   version=version,
@@ -25,14 +29,11 @@ setup(name='python3-iqe',
     Extension(
       name='iqe',
       sources = [
-        'covsrt.c',
-        'gaussj.c',
-        'indexx.c',
         'iqefunc.c',
-        'mrqfit.c',
-        'sort.c',
+        'mpfit.c',
         'python-iqe.c',
       ],
+      include_dirs=['.'],
       define_macros=define_macros,
       libraries = ['m'],
       extra_compile_args = extra_compile_args,
