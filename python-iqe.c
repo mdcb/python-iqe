@@ -139,13 +139,13 @@ iqe_exit:
 //-------------------------------------------------------------------
 
 PyDoc_STRVAR(pyiqe_doc,
-  "usage: iqe(2d-array-data[,2d-array-mask])\n"
-  "returns [meanX,meanY,fwhmX,fwhmY,symmetryAngle,objectPeak,meanBackground]\n"
-  " mean X/Y position within array, first pixel = 0."
-  " angle of major axis, degrees, along X."
-  " peak value of object above background."
-  " mean background level."
-);
+             "usage: iqe(2d-array-data[,2d-array-mask])\n"
+             "returns [meanX,meanY,fwhmX,fwhmY,symmetryAngle,objectPeak,meanBackground]\n"
+             " mean X/Y position within array, first pixel = 0."
+             " angle of major axis, degrees, along X."
+             " peak value of object above background."
+             " mean background level."
+            );
 
 struct PyMethodDef methods[] =
 {
@@ -176,7 +176,7 @@ PyMODINIT_FUNC PyInit_iqe(void)
   if (m == NULL) { return NULL; }
 
   pyiqe_err = PyErr_NewException("iqe.error", NULL, NULL);
-  PyModule_AddObject(m, "error" , pyiqe_err);
+  PyModule_AddObject(m, "error", pyiqe_err);
   PyModule_AddStringConstant(m, "__version__", PYIQE_VERSION);
   return m;
 }
