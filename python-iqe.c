@@ -99,14 +99,6 @@ PyObject * pyiqe(PyObject * self, PyObject * args)
 
   if (iqe(fltdata, fltmsk, w, h, parm, sdev))
     {
-      Py_DECREF(inp_array);
-
-      if (msk_array) { Py_DECREF(msk_array); }
-
-      Py_DECREF(flt_array);
-
-      if (mskflt_array) { Py_DECREF(mskflt_array); }
-
       PYIQE_ERR("Could not calculate statistics on specified area of image.");
       goto iqe_exit;
     }
@@ -132,6 +124,7 @@ iqe_exit:
   Py_XDECREF(msk_array);
   Py_XDECREF(mskflt_array);
   Py_XINCREF(result);
+
   return result;
 }
 
