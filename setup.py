@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
 
-from numpy.distutils.core import setup, Distribution, Extension
+from setuptools import setup, Distribution, Extension
 
-dist = Distribution()
-dist.parse_config_files()
-dist.parse_command_line()
-
-release = dist.get_option_dict('bdist_rpm')['release'][1]
-version = dist.get_option_dict('command')['version'][1]
+version = '3.1.5'
 
 define_macros=[
-  ('PYIQE_VERSION', f'"{version}-{release}"'),
+  ('PYIQE_VERSION', f'"{version}"'),
   ('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION'),
 ]
 
 extra_compile_args=[
+  '-std=c99',
   '-Wno-unused-but-set-variable',
   '-Wno-unused-variable',
 ]
 
-setup(name='python3-iqe',
+setup(
+  name='iqe',
   version=version,
   description='Image Quality Estimator',
   long_description="Plugin to ESO's skycat pick-object.",
