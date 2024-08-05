@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from numpy.distutils.core import setup, Distribution, Extension
+from setuptools import setup, Distribution, Extension
 
 dist = Distribution()
 dist.parse_config_files()
